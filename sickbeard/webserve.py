@@ -1356,6 +1356,8 @@ class ConfigProviders:
                 sickbeard.NZBX = curEnabled
             elif curProvider == 'iptorrents':
                 sickbeard.IPTORRENTS = curEnabled
+            elif curProvider == 'isohunt':
+                sickbeard.ISOHUNT = curEnabled
             elif curProvider == 'omgwtfnzbs':
                 sickbeard.OMGWTFNZBS = curEnabled  
             elif curProvider == 'kickasstorrents':

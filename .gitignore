@@ -30,6 +30,9 @@ tests/cache.db
 *.tmproj
 *.tmproject
 *.sw?
+*.komodoproject
+Session.vim
+.ropeproject/*
 
 # OS generated files #
 ######################

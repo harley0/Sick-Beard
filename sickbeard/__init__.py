@@ -30,7 +30,7 @@ from threading import Lock
 
 # apparently py2exe won't build these unless they're imported somewhere
 from sickbeard import providers, metadata
-from providers import ezrss, tvtorrents, btn, nzbsrus, newznab, womble, thepiratebay, dtt, torrentleech, kat, nzbx, iptorrents, omgwtfnzbs
+from providers import ezrss, tvtorrents, btn, nzbsrus, newznab, womble, thepiratebay, dtt, torrentleech, kat, isohunt, nzbx, iptorrents, omgwtfnzbs
 from sickbeard.config import CheckSection, check_setting_int, check_setting_str, ConfigMigrator
 
 
@@ -116,7 +116,7 @@ CACHE_DIR = None
 ACTUAL_CACHE_DIR = None
 ROOT_DIRS = None
 UPDATE_SHOWS_ON_START = None
-SORT_ARTICLE = None 
+SORT_ARTICLE = None
 
 USE_BANNER = None
 USE_LISTVIEW = None
@@ -199,6 +199,8 @@ IPTORRENTS_FREELEECH = False
 KAT = None
 KAT_TRUSTED = False
 KAT_VERIFIED = False
+
+ISOHUNT = False
 
 ADD_SHOWS_WO_DIR = None
 CREATE_MISSING_SHOW_DIRS = None
@@ -428,7 +430,7 @@ def initialize(consoleLogging=True):
                 showUpdateScheduler, __INITIALIZED__, LAUNCH_BROWSER, UPDATE_SHOWS_ON_START, SORT_ARTICLE, showList, loadingShowList, \
                 NZBS, NZBS_UID, NZBS_HASH, EZRSS, TVTORRENTS, TVTORRENTS_DIGEST, TVTORRENTS_HASH, TVTORRENTS_USERNAME, TVTORRENTS_PASSWORD, BTN, BTN_API_KEY, \
                 DTT, DTT_NORAR, DTT_SINGLE, THEPIRATEBAY, THEPIRATEBAY_TRUSTED, THEPIRATEBAY_PROXY, THEPIRATEBAY_PROXY_URL, THEPIRATEBAY_BLACKLIST, TORRENTLEECH, TORRENTLEECH_USERNAME, TORRENTLEECH_PASSWORD, \
-                IPTORRENTS, IPTORRENTS_USERNAME, IPTORRENTS_PASSWORD, IPTORRENTS_FREELEECH, KAT, KAT_TRUSTED, KAT_VERIFIED, \
+                IPTORRENTS, IPTORRENTS_USERNAME, IPTORRENTS_PASSWORD, IPTORRENTS_FREELEECH, KAT, KAT_TRUSTED, KAT_VERIFIED, ISOHUNT, \
                 TORRENT_DIR, USENET_RETENTION, SOCKET_TIMEOUT, SEARCH_FREQUENCY, DEFAULT_SEARCH_FREQUENCY, BACKLOG_SEARCH_FREQUENCY, \
                 QUALITY_DEFAULT, FLATTEN_FOLDERS_DEFAULT, SUBTITLES_DEFAULT, STATUS_DEFAULT, \
                 GROWL_NOTIFY_ONSNATCH, GROWL_NOTIFY_ONDOWNLOAD, GROWL_NOTIFY_ONSUBTITLEDOWNLOAD, TWITTER_NOTIFY_ONSNATCH, TWITTER_NOTIFY_ONDOWNLOAD, TWITTER_NOTIFY_ONSUBTITLEDOWNLOAD, \
@@ -497,13 +499,13 @@ def initialize(consoleLogging=True):
         LAUNCH_BROWSER = bool(check_setting_int(CFG, 'General', 'launch_browser', 1))
 
         UPDATE_SHOWS_ON_START = bool(check_setting_int(CFG, 'General', 'update_shows_on_start', 0))
-        SORT_ARTICLE = bool(check_setting_int(CFG, 'General', 'sort_article', 0)) 
+        SORT_ARTICLE = bool(check_setting_int(CFG, 'General', 'sort_article', 0))
 
-        USE_API = bool(check_setting_int(CFG, 'General', 'use_api', 0)) 
+        USE_API = bool(check_setting_int(CFG, 'General', 'use_api', 0))
         API_KEY = check_setting_str(CFG, 'General', 'api_key', '')
-        
+
         ENABLE_HTTPS = bool(check_setting_int(CFG, 'General', 'enable_https', 0))
-        
+
         HTTPS_CERT = check_setting_str(CFG, 'General', 'https_cert', 'server.crt')
         HTTPS_KEY = check_setting_str(CFG, 'General', 'https_key', 'server.key')
 
@@ -511,21 +513,21 @@ def initialize(consoleLogging=True):
         # fix bad configs due to buggy code
         if ACTUAL_CACHE_DIR == 'None':
             ACTUAL_CACHE_DIR = 'cache'
-        
+
         # unless they specify, put the cache dir inside the data dir
         if not os.path.isabs(ACTUAL_CACHE_DIR):
             CACHE_DIR = os.path.join(DATA_DIR, ACTUAL_CACHE_DIR)
         else:
             CACHE_DIR = ACTUAL_CACHE_DIR
-        
+
         if not helpers.makeDir(CACHE_DIR):
             logger.log(u"!!! Creating local cache dir failed, using system default", logger.ERROR)
             CACHE_DIR = None
-        
+
         ROOT_DIRS = check_setting_str(CFG, 'General', 'root_dirs', '')
         if not re.match(r'\d+\|[^|]+(?:\|[^|]+)*', ROOT_DIRS):
             ROOT_DIRS = ''
-        
+
         proxies = urllib.getproxies()
         proxy_url = None
         if 'http' in proxies:
@@ -588,29 +590,29 @@ def initialize(consoleLogging=True):
         MOVE_ASSOCIATED_FILES = check_setting_int(CFG, 'General', 'move_associated_files', 0)
         CREATE_MISSING_SHOW_DIRS = check_setting_int(CFG, 'General', 'create_missing_show_dirs', 0)
         ADD_SHOWS_WO_DIR = check_setting_int(CFG, 'General', 'add_shows_wo_dir', 0)
-        
+
         EZRSS = bool(check_setting_int(CFG, 'General', 'use_torrent', 0))
         if not EZRSS:
             EZRSS = bool(check_setting_int(CFG, 'EZRSS', 'ezrss', 0))
-            
-        TVTORRENTS = bool(check_setting_int(CFG, 'TVTORRENTS', 'tvtorrents', 0))    
+
+        TVTORRENTS = bool(check_setting_int(CFG, 'TVTORRENTS', 'tvtorrents', 0))
         TVTORRENTS_DIGEST = check_setting_str(CFG, 'TVTORRENTS', 'tvtorrents_digest', '')
         TVTORRENTS_HASH = check_setting_str(CFG, 'TVTORRENTS', 'tvtorrents_hash', '')
         TVTORRENTS_USERNAME = check_setting_str(CFG, 'TVTORRENTS', 'tvtorrents_username', '')
         TVTORRENTS_PASSWORD = check_setting_str(CFG, 'TVTORRENTS', 'tvtorrents_password', '')
 
-        BTN = bool(check_setting_int(CFG, 'BTN', 'btn', 0))    
+        BTN = bool(check_setting_int(CFG, 'BTN', 'btn', 0))
         BTN_API_KEY = check_setting_str(CFG, 'BTN', 'btn_api_key', '')
 
         DTT = bool(check_setting_int(CFG, 'DTT', 'dtt', 0))
         DTT_NORAR = bool(check_setting_int(CFG, 'DTT', 'dtt_norar', 0))
         DTT_SINGLE = bool(check_setting_int(CFG, 'DTT', 'dtt_single', 0))
-        
-        THEPIRATEBAY = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay', 0)) 
-        THEPIRATEBAY_TRUSTED = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay_trusted', 1))         
+
+        THEPIRATEBAY = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay', 0))
+        THEPIRATEBAY_TRUSTED = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay_trusted', 1))
         THEPIRATEBAY_PROXY = bool(check_setting_int(CFG, 'THEPIRATEBAY', 'thepiratebay_proxy', 0))
-        THEPIRATEBAY_PROXY_URL = check_setting_str(CFG, 'THEPIRATEBAY', 'thepiratebay_proxy_url', '')        
-        THEPIRATEBAY_BLACKLIST = check_setting_str(CFG, 'THEPIRATEBAY', 'thepiratebay_blacklist', '')        
+        THEPIRATEBAY_PROXY_URL = check_setting_str(CFG, 'THEPIRATEBAY', 'thepiratebay_proxy_url', '')
+        THEPIRATEBAY_BLACKLIST = check_setting_str(CFG, 'THEPIRATEBAY', 'thepiratebay_blacklist', '')
 
         TORRENTLEECH = bool(check_setting_int(CFG, 'TORRENTLEECH', 'torrentleech', 0))
         TORRENTLEECH_USERNAME = check_setting_str(CFG, 'TORRENTLEECH', 'torrentleech_username', '')
@@ -625,10 +627,12 @@ def initialize(consoleLogging=True):
         KAT_TRUSTED = bool(check_setting_int(CFG, 'KAT', 'kat_trusted', 0))
         KAT_VERIFIED = bool(check_setting_int(CFG, 'KAT', 'kat_verified', 0))
 
+        ISOHUNT = bool(check_setting_int(CFG, 'ISOHUNT', 'isohunt', 0))
+
         NZBS = bool(check_setting_int(CFG, 'NZBs', 'nzbs', 0))
         NZBS_UID = check_setting_str(CFG, 'NZBs', 'nzbs_uid', '')
         NZBS_HASH = check_setting_str(CFG, 'NZBs', 'nzbs_hash', '')
-        
+
         NZBSRUS = bool(check_setting_int(CFG, 'NZBsRUS', 'nzbsrus', 0))
         NZBSRUS_UID = check_setting_str(CFG, 'NZBsRUS', 'nzbsrus_uid', '')
         NZBSRUS_HASH = check_setting_str(CFG, 'NZBsRUS', 'nzbsrus_hash', '')
@@ -665,11 +669,11 @@ def initialize(consoleLogging=True):
         TORRENT_HOST = check_setting_str(CFG, 'TORRENT', 'torrent_host', '')
         TORRENT_PATH = check_setting_str(CFG, 'TORRENT', 'torrent_path', '')
         TORRENT_RATIO = check_setting_str(CFG, 'TORRENT', 'torrent_ratio', '')
-        TORRENT_PAUSED = bool(check_setting_int(CFG, 'TORRENT', 'torrent_paused', 0)) 
-        TORRENT_HIGH_BANDWIDTH = bool(check_setting_int(CFG, 'TORRENT', 'torrent_high_bandwidth', 0)) 
+        TORRENT_PAUSED = bool(check_setting_int(CFG, 'TORRENT', 'torrent_paused', 0))
+        TORRENT_HIGH_BANDWIDTH = bool(check_setting_int(CFG, 'TORRENT', 'torrent_high_bandwidth', 0))
         TORRENT_LABEL = check_setting_str(CFG, 'TORRENT', 'torrent_label', '')
-        
-        USE_XBMC = bool(check_setting_int(CFG, 'XBMC', 'use_xbmc', 0)) 
+
+        USE_XBMC = bool(check_setting_int(CFG, 'XBMC', 'use_xbmc', 0))
         XBMC_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'XBMC', 'xbmc_notify_onsnatch', 0))
         XBMC_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'XBMC', 'xbmc_notify_ondownload', 0))
         XBMC_NOTIFY_ONSUBTITLEDOWNLOAD = bool(check_setting_int(CFG, 'XBMC', 'xbmc_notify_onsubtitledownload', 0))
@@ -706,8 +710,8 @@ def initialize(consoleLogging=True):
 
         USE_TWITTER = bool(check_setting_int(CFG, 'Twitter', 'use_twitter', 0))
         TWITTER_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_onsnatch', 0))
-        TWITTER_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_ondownload', 0))        
-        TWITTER_NOTIFY_ONSUBTITLEDOWNLOAD = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_onsubtitledownload', 0))        
+        TWITTER_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_ondownload', 0))
+        TWITTER_NOTIFY_ONSUBTITLEDOWNLOAD = bool(check_setting_int(CFG, 'Twitter', 'twitter_notify_onsubtitledownload', 0))
         TWITTER_USERNAME = check_setting_str(CFG, 'Twitter', 'twitter_username', '')
         TWITTER_PASSWORD = check_setting_str(CFG, 'Twitter', 'twitter_password', '')
         TWITTER_PREFIX = check_setting_str(CFG, 'Twitter', 'twitter_prefix', 'Sick Beard')
@@ -747,7 +751,7 @@ def initialize(consoleLogging=True):
         NMJ_DBLOC = check_setting_str(CFG, 'NMJv2', 'nmjv2_dbloc', '')
 
         USE_SYNOINDEX = bool(check_setting_int(CFG, 'Synology', 'use_synoindex', 0))
-        
+
         USE_SYNOLOGYNOTIFIER = bool(check_setting_int(CFG, 'SynologyNotifier', 'use_synologynotifier', 0))
         SYNOLOGYNOTIFIER_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'SynologyNotifier', 'synologynotifier_notify_onsnatch', 0))
         SYNOLOGYNOTIFIER_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'SynologyNotifier', 'synologynotifier_notify_ondownload', 0))
@@ -812,7 +816,7 @@ def initialize(consoleLogging=True):
         METADATA_TYPE = check_setting_str(CFG, 'General', 'metadata_type', '')
 
         metadata_provider_dict = metadata.get_metadata_generator_dict()
-        
+
         # if this exists it's legacy, use the info to upgrade metadata to the new settings
         if METADATA_TYPE:
 
@@ -825,13 +829,13 @@ def initialize(consoleLogging=True):
             elif METADATA_TYPE == 'ps3':
                 old_metadata_class = metadata.ps3.metadata_class
             elif METADATA_TYPE == 'mede8er':
-                old_metadata_class = metadata.mede8er.metadata_class                
-        
+                old_metadata_class = metadata.mede8er.metadata_class
+
             if old_metadata_class:
-                
+
                 METADATA_SHOW = bool(check_setting_int(CFG, 'General', 'metadata_show', 1))
                 METADATA_EPISODE = bool(check_setting_int(CFG, 'General', 'metadata_episode', 1))
-            
+
                 ART_POSTER = bool(check_setting_int(CFG, 'General', 'art_poster', 1))
                 ART_FANART = bool(check_setting_int(CFG, 'General', 'art_fanart', 1))
                 ART_THUMBNAILS = bool(check_setting_int(CFG, 'General', 'art_thumbnails', 1))
@@ -843,7 +847,7 @@ def initialize(consoleLogging=True):
                                                         ART_FANART,
                                                         ART_THUMBNAILS,
                                                         ART_SEASON_THUMBNAILS)
-                
+
                 metadata_provider_dict[new_metadata_class.name] = new_metadata_class
 
         # this is the normal codepath for metadata config
@@ -870,10 +874,10 @@ def initialize(consoleLogging=True):
                 tmp_provider.set_config(cur_metadata_config)
                 metadata_provider_dict[tmp_provider.name] = tmp_provider
 
-        GUI_NAME = check_setting_str(CFG, 'GUI', 'gui_name', 'slick') 
+        GUI_NAME = check_setting_str(CFG, 'GUI', 'gui_name', 'slick')
 
-        HOME_LAYOUT = check_setting_str(CFG, 'GUI', 'home_layout', 'poster')    
-        DISPLAY_SHOW_SPECIALS = bool(check_setting_int(CFG, 'GUI', 'display_show_specials', 1)) 
+        HOME_LAYOUT = check_setting_str(CFG, 'GUI', 'home_layout', 'poster')
+        DISPLAY_SHOW_SPECIALS = bool(check_setting_int(CFG, 'GUI', 'display_show_specials', 1))
         COMING_EPS_LAYOUT = check_setting_str(CFG, 'GUI', 'coming_eps_layout', 'banner')
         COMING_EPS_DISPLAY_PAUSED = bool(check_setting_int(CFG, 'GUI', 'coming_eps_display_paused', 0))
         COMING_EPS_SORT = check_setting_str(CFG, 'GUI', 'coming_eps_sort', 'date')
@@ -888,10 +892,10 @@ def initialize(consoleLogging=True):
 
         # initialize the main SB database
         db.upgradeDatabase(db.DBConnection(), mainDB.InitialSchema)
-        
+
         # initialize the cache database
         db.upgradeDatabase(db.DBConnection("cache.db"), cache_db.InitialSchema)
-        
+
         # fix up any db problems
         db.sanityCheckDatabase(db.DBConnection(), mainDB.MainSanityCheck)
 
@@ -1203,7 +1207,7 @@ def save_config():
     new_config['General']['use_nzbs'] = int(USE_NZBS)
     new_config['General']['use_torrents'] = int(USE_TORRENTS)
     new_config['General']['nzb_method'] = NZB_METHOD
-    new_config['General']['torrent_method'] = TORRENT_METHOD    
+    new_config['General']['torrent_method'] = TORRENT_METHOD
     new_config['General']['usenet_retention'] = int(USENET_RETENTION)
     new_config['General']['search_frequency'] = int(SEARCH_FREQUENCY)
     new_config['General']['download_propers'] = int(DOWNLOAD_PROPERS)
@@ -1241,7 +1245,7 @@ def save_config():
     new_config['General']['rename_episodes'] = int(RENAME_EPISODES)
     new_config['General']['create_missing_show_dirs'] = CREATE_MISSING_SHOW_DIRS
     new_config['General']['add_shows_wo_dir'] = ADD_SHOWS_WO_DIR
-    
+
     new_config['General']['extra_scripts'] = '|'.join(EXTRA_SCRIPTS)
     new_config['General']['git_path'] = GIT_PATH
     new_config['General']['ignore_words'] = IGNORE_WORDS
@@ -1252,7 +1256,7 @@ def save_config():
 
     new_config['EZRSS'] = {}
     new_config['EZRSS']['ezrss'] = int(EZRSS)
-    
+
     new_config['TVTORRENTS'] = {}
     new_config['TVTORRENTS']['tvtorrents'] = int(TVTORRENTS)
     new_config['TVTORRENTS']['tvtorrents_digest'] = TVTORRENTS_DIGEST
@@ -1271,7 +1275,7 @@ def save_config():
 
     new_config['THEPIRATEBAY'] = {}
     new_config['THEPIRATEBAY']['thepiratebay'] = int(THEPIRATEBAY)
-    new_config['THEPIRATEBAY']['thepiratebay_trusted'] = int(THEPIRATEBAY_TRUSTED)    
+    new_config['THEPIRATEBAY']['thepiratebay_trusted'] = int(THEPIRATEBAY_TRUSTED)
     new_config['THEPIRATEBAY']['thepiratebay_proxy'] = int(THEPIRATEBAY_PROXY)
     new_config['THEPIRATEBAY']['thepiratebay_proxy_url'] = THEPIRATEBAY_PROXY_URL
     new_config['THEPIRATEBAY']['thepiratebay_blacklist'] = THEPIRATEBAY_BLACKLIST
@@ -1291,7 +1295,10 @@ def save_config():
     new_config['KAT']['kat'] = int(KAT)
     new_config['KAT']['kat_trusted'] = int(KAT_TRUSTED)
     new_config['KAT']['kat_verified'] = int(KAT_VERIFIED)
-    
+
+    new_config['ISOHUNT'] = {}
+    new_config['ISOHUNT']['isohunt'] = int(ISOHUNT)
+
     new_config['NZBs'] = {}
     new_config['NZBs']['nzbs'] = int(NZBS)
     new_config['NZBs']['nzbs_uid'] = NZBS_UID
@@ -1314,9 +1321,9 @@ def save_config():
 
     new_config['Womble'] = {}
     new_config['Womble']['womble'] = int(WOMBLE)
-    
+
     new_config['nzbX'] = {}
-    new_config['nzbX']['nzbx'] = int(NZBX)    
+    new_config['nzbX']['nzbx'] = int(NZBX)
     new_config['nzbX']['nzbx_completion'] = int(NZBX_COMPLETION)
 
     new_config['omgwtfnzbs'] = {}
@@ -1372,15 +1379,15 @@ def save_config():
     new_config['Growl']['use_growl'] = int(USE_GROWL)
     new_config['Growl']['growl_notify_onsnatch'] = int(GROWL_NOTIFY_ONSNATCH)
     new_config['Growl']['growl_notify_ondownload'] = int(GROWL_NOTIFY_ONDOWNLOAD)
-    new_config['Growl']['growl_notify_onsubtitledownload'] = int(GROWL_NOTIFY_ONSUBTITLEDOWNLOAD) 
+    new_config['Growl']['growl_notify_onsubtitledownload'] = int(GROWL_NOTIFY_ONSUBTITLEDOWNLOAD)
     new_config['Growl']['growl_host'] = GROWL_HOST
     new_config['Growl']['growl_password'] = GROWL_PASSWORD
-    
+
     new_config['Prowl'] = {}
     new_config['Prowl']['use_prowl'] = int(USE_PROWL)
     new_config['Prowl']['prowl_notify_onsnatch'] = int(PROWL_NOTIFY_ONSNATCH)
     new_config['Prowl']['prowl_notify_ondownload'] = int(PROWL_NOTIFY_ONDOWNLOAD)
-    new_config['Prowl']['prowl_notify_onsubtitledownload'] = int(PROWL_NOTIFY_ONSUBTITLEDOWNLOAD) 
+    new_config['Prowl']['prowl_notify_onsubtitledownload'] = int(PROWL_NOTIFY_ONSUBTITLEDOWNLOAD)
     new_config['Prowl']['prowl_api'] = PROWL_API
     new_config['Prowl']['prowl_priority'] = PROWL_PRIORITY
 
